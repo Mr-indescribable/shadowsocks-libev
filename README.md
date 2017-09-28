@@ -9,7 +9,7 @@ It is a port of [Shadowsocks](https://github.com/shadowsocks/shadowsocks)
 created by [@clowwindy](https://github.com/clowwindy), and maintained by
 [@madeye](https://github.com/madeye) and [@linusyang](https://github.com/linusyang).
 
-Current version: 3.0.8 | [Changelog](debian/changelog)
+Current version: 3.1.0 | [Changelog](debian/changelog)
 
 Travis CI: [![Travis CI](https://travis-ci.org/shadowsocks/shadowsocks-libev.svg?branch=master)](https://travis-ci.org/shadowsocks/shadowsocks-libev)
 
@@ -101,6 +101,7 @@ sudo apt -t stretch-backports install shadowsocks-libev
 For **Ubuntu 14.04 and 16.04** users, please install from PPA:
 
 ```bash
+sudo apt-get install software-properties-common -y
 sudo add-apt-repository ppa:max-c-lv/shadowsocks-libev
 sudo apt-get update
 sudo apt install shadowsocks-libev

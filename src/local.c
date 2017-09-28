@@ -101,6 +101,7 @@ static int acl       = 0;
 static int mode      = TCP_ONLY;
 static int ipv6first = 0;
 static int fast_open = 0;
+static int no_delay  = 0;
 static int udp_fd    = 0;
 
 static struct ev_signal sigint_watcher;
@@ -480,7 +481,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
             if (buf->len < method_len) {
                 return;
             }
-            
+
             struct method_select_response response;
             response.ver    = SVERSION;
             response.method = METHOD_UNACCEPTABLE;
@@ -497,7 +498,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 close_and_free_server(EV_A_ server);
                 return;
             }
-            
+
             server->stage = STAGE_HANDSHAKE;
 
             if (method_len < (int)(buf->len)) {
@@ -664,6 +665,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                 } else if (ret > 0) {
                     sni_detected = 1;
 
+#ifndef __ANDROID__
                     // Reconstruct address buffer
                     abuf->len               = 0;
                     abuf->data[abuf->len++] = 3;
@@ -673,6 +675,7 @@ server_recv_cb(EV_P_ ev_io *w, int revents)
                     p          = htons(p);
                     memcpy(abuf->data + abuf->len, &p, 2);
                     abuf->len += 2;
+#endif
 
                     if (acl || verbose) {
                         memcpy(host, hostname, ret);
@@ -948,12 +951,12 @@ remote_recv_cb(EV_P_ ev_io *w, int revents)
     }
 
     // Disable TCP_NODELAY after the first response are sent
-    if (!remote->recv_ctx->connected) {
+    if (!remote->recv_ctx->connected && !no_delay) {
         int opt = 0;
         setsockopt(server->fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
         setsockopt(remote->fd, SOL_TCP, TCP_NODELAY, &opt, sizeof(opt));
-        remote->recv_ctx->connected = 1;
     }
+    remote->recv_ctx->connected = 1;
 }
 
 static void
@@ -1298,6 +1301,7 @@ main(int argc, char **argv)
     static struct option long_options[] = {
         { "reuse-port",  no_argument,       NULL, GETOPT_VAL_REUSE_PORT },
         { "fast-open",   no_argument,       NULL, GETOPT_VAL_FAST_OPEN },
+        { "no-delay",    no_argument,       NULL, GETOPT_VAL_NODELAY },
         { "acl",         required_argument, NULL, GETOPT_VAL_ACL },
         { "mtu",         required_argument, NULL, GETOPT_VAL_MTU },
         { "mptcp",       no_argument,       NULL, GETOPT_VAL_MPTCP },
@@ -1335,6 +1339,10 @@ main(int argc, char **argv)
         case GETOPT_VAL_MPTCP:
             mptcp = 1;
             LOGI("enable multipath TCP");
+            break;
+        case GETOPT_VAL_NODELAY:
+            no_delay = 1;
+            LOGI("enable TCP no-delay");
             break;
         case GETOPT_VAL_PLUGIN:
             plugin = optarg;
